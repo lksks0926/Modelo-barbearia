@@ -150,11 +150,10 @@
 
             if (!dataSelecionada) return;
 
-            // 1. Bloqueio de Domingo (Domingo é o dia 0 ou 6 dependendo da timezone/string)
+            // 1. Bloqueio de Domingo
             const partes = dataSelecionada.split('-');
-            const diaSemana = new Date(partes[0], partes[1] - 1, partes[2]).getDay();
-            
-            if (diaSemana === 0) { // 0 = Domingo
+            const dataObjeto = new Date(partes[0], partes[1] - 1, partes[2]);
+            if (dataObjeto.getDay() === 0) { 
                 msgAviso.style.display = 'block';
                 inputData.value = '';
                 selectHora.innerHTML = '<option value="">Selecione uma data primeiro</option>';
@@ -167,7 +166,7 @@
             selectHora.disabled = true;
             selectHora.innerHTML = '<option value="">Carregando horários vagos...</option>';
 
-            // 2. Checar se o dia está bloqueado no painel Admin
+            // 2. Verificar bloqueio manual do admin
             const { data: bloqueios } = await client
                 .from('bloqueios')
                 .select('*')
@@ -180,7 +179,7 @@
                 return;
             }
 
-            // 3. Buscar agendamentos existentes no dia
+            // 3. Buscar horários já ocupados no Supabase
             const { data: agendamentos } = await client
                 .from('agendamentos')
                 .select('hora')
@@ -188,12 +187,32 @@
 
             const ocupados = agendamentos ? agendamentos.map(a => a.hora) : [];
 
-            // 4. Filtrar apenas horários livres
-            const livres = todosHorarios.filter(h => !ocupados.includes(h));
+            // 4. Filtrar por disponibilidade no BD
+            let livres = todosHorarios.filter(h => !ocupados.includes(h));
 
+            // 5. Validação de horário no dia atual (remove passados e com menos de 15 min)
+            const agora = new Date();
+            const anoAtual = agora.getFullYear();
+            const mesAtual = String(agora.getMonth() + 1).padStart(2, '0');
+            const diaAtual = String(agora.getDate()).padStart(2, '0');
+            const hojeFormatado = `${anoAtual}-${mesAtual}-${diaAtual}`;
+
+            if (dataSelecionada === hojeFormatado) {
+                const minutosAtuais = (agora.getHours() * 60) + agora.getMinutes();
+
+                livres = livres.filter(h => {
+                    const [hHora, hMin] = h.split(':').map(Number);
+                    const minutosDoHorario = (hHora * 60) + hMin;
+                    
+                    // Exige que faltem no mínimo 15 minutos para o horário
+                    return (minutosDoHorario - minutosAtuais) >= 15;
+                });
+            }
+
+            // Renderizar opções de horário no select
             selectHora.innerHTML = '';
             if (livres.length === 0) {
-                selectHora.innerHTML = '<option value="">Nenhum horário vago nesta data</option>';
+                selectHora.innerHTML = '<option value="">Nenhum horário disponível para esta data</option>';
             } else {
                 selectHora.innerHTML = '<option value="">Escolha um horário</option>';
                 livres.forEach(h => {
