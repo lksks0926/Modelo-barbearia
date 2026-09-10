@@ -3,8 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Barbearia Premium - Jean Carlos</title>
-    <!-- Importando o Supabase -->
+    <title>Barbearia Jean Carlos</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
@@ -19,24 +18,11 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; scroll-behavior: smooth; }
         body { background-color: var(--bg-dark); color: var(--text-light); line-height: 1.6; }
         
-        /* Navegação Superior */
-        .system-switcher { 
-            background: #000; padding: 15px; display: flex; justify-content: center; gap: 15px; 
-            border-bottom: 2px solid var(--gold); position: sticky; top: 0; z-index: 1000;
-        }
-        .system-switcher button { 
-            padding: 10px 20px; background: #333; color: white; border: none; 
-            border-radius: 4px; cursor: pointer; font-weight: bold; transition: 0.3s;
-        }
-        .system-switcher button:hover, .system-switcher button.active { background: var(--gold); color: black; }
-        
-        .view-section { display: none; padding: 40px 20px; max-width: 900px; margin: 0 auto; }
-        .view-section.active { display: block; }
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
         
         h1, h2, h3 { color: var(--gold); margin-bottom: 20px; text-align: center; }
         .box { background: var(--bg-panel); padding: 30px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 30px; }
         
-        /* Seções de Informação */
         .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .feature-card { background: #2a2a2a; padding: 20px; border-radius: 8px; text-align: center; border-bottom: 3px solid var(--gold); }
         .feature-card h3 { color: #fff; margin-bottom: 10px; font-size: 1.1rem; }
@@ -45,7 +31,6 @@
         .perfil-section { display: flex; flex-wrap: wrap; gap: 20px; align-items: center; background: #1a1a1a; padding: 25px; border-radius: 8px; margin-bottom: 30px; border-left: 4px solid var(--gold); }
         .perfil-text { flex: 1; min-width: 250px; }
         
-        /* Botões Estilizados */
         .btn-destaque {
             display: inline-block; background: var(--gold); color: black; padding: 15px 35px;
             font-size: 1.2rem; font-weight: bold; text-decoration: none; border-radius: 50px;
@@ -54,7 +39,6 @@
         .btn-destaque:hover { background: var(--gold-hover); transform: translateY(-2px); }
         .center-btn { text-align: center; margin: 30px 0; }
         
-        /* Formulários */
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; color: var(--text-light); }
         input, select { width: 100%; padding: 12px; background: #2a2a2a; border: 1px solid var(--border); color: white; border-radius: 4px; font-size: 1rem; }
@@ -63,31 +47,16 @@
         button.btn-submit:hover { background: var(--gold-hover); }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
         
-        /* Painel Admin */
-        .agendamento-item { background: #2a2a2a; padding: 15px; border-radius: 6px; border-left: 4px solid var(--gold); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .agendamento-info h4 { margin-bottom: 5px; color: #fff; font-size: 1.1rem; }
-        .agendamento-info p { color: #aaa; font-size: 0.9rem; }
+        #msg-sucesso { display: none; text-align: center; margin-top: 15px; font-weight: bold; color: #4caf50; }
         
-        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .btn-sair { background: transparent; color: #ff4c4c; border: 1px solid #ff4c4c; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
-        .btn-sair:hover { background: #ff4c4c; color: white; }
-        
-        #msg-sucesso, #msg-erro-login { display: none; text-align: center; margin-top: 15px; font-weight: bold; }
-        #msg-sucesso { color: #4caf50; }
-        #msg-erro-login { color: #ff4c4c; }
+        footer { text-align: center; padding: 20px; color: #666; font-size: 0.85rem; border-top: 1px solid var(--border); margin-top: 40px; }
+        footer a { color: #888; text-decoration: none; }
+        footer a:hover { color: var(--gold); }
     </style>
 </head>
 <body>
 
-    <div class="system-switcher">
-        <button id="btn-site" class="active" onclick="switchView('site')">🌐 Início</button>
-        <button id="btn-admin" onclick="acessarPainel()">🔐 Painel Admin</button>
-    </div>
-
-    <!-- ========================================== -->
-    <!-- 1. SITE DO CLIENTE                         -->
-    <!-- ========================================== -->
-    <div id="view-site" class="view-section active">
+    <div class="container">
         
         <div style="text-align: center; margin-bottom: 40px; padding: 40px 20px; background: linear-gradient(180deg, #1a1a1a 0%, #121212 100%); border-radius: 8px; border: 1px solid var(--border);">
             <h1 style="font-size: 2.5rem; margin-bottom: 10px;">Barbearia Jean Carlos</h1>
@@ -98,7 +67,7 @@
         <div class="perfil-section">
             <div class="perfil-text">
                 <h2 style="text-align: left; margin-bottom: 10px;">Quem Sou Eu?</h2>
-                <p>Olá, sou <strong>Jean Carlos</strong>. Sou especialista em barbearia clássica e moderna. Meu objetivo não é apenas cortar cabelo ou fazer a barba, mas entregar uma experiência completa que eleva sua autoestima. Trabalho com dedicação para garantir que você saia da cadeira com o melhor visual possível.</p>
+                <p>Olá, sou <strong>Jean Carlos</strong>. Especialista em barbearia clássica e moderna. Meu objetivo não é apenas cortar cabelo ou fazer a barba, mas entregar uma experiência completa que eleva sua autoestima com excelência e dedicação.</p>
             </div>
         </div>
 
@@ -106,15 +75,15 @@
         <div class="info-grid">
             <div class="feature-card">
                 <h3>✂️ Qualidade Premium</h3>
-                <p>Uso técnicas avançadas e os melhores produtos do mercado para um acabamento perfeito.</p>
+                <p>Uso técnicas avançadas e produtos de alto padrão para um acabamento perfeito.</p>
             </div>
             <div class="feature-card">
                 <h3>⏰ Sem Filas</h3>
-                <p>Seu tempo é valioso. Com o sistema de agendamento, você é atendido exatamente no horário marcado.</p>
+                <p>Seu tempo é valioso. Com o agendamento prévio, você é atendido pontualmente.</p>
             </div>
             <div class="feature-card">
                 <h3>🌟 Ambiente Agradável</h3>
-                <p>Um espaço preparado para você relaxar, trocar uma ideia e sair renovado.</p>
+                <p>Um espaço confortável e climatizado preparado para você relaxar.</p>
             </div>
         </div>
 
@@ -122,7 +91,6 @@
             <h2 style="text-align: left; margin-bottom: 10px;">📍 Onde Estamos</h2>
             <p><strong>Localização:</strong> Casa Amarela, Recife - PE</p>
             <p><strong>Horário:</strong> Segunda a Sábado, das 09h às 20h</p>
-            <p style="margin-top: 15px; color: #aaa;">Fácil acesso, ambiente climatizado e preparado para te receber.</p>
         </div>
 
         <div class="center-btn">
@@ -166,115 +134,21 @@
                 <div id="msg-sucesso">✅ Agendamento realizado com sucesso! Te esperamos.</div>
             </form>
         </div>
-    </div>
 
-    <!-- ========================================== -->
-    <!-- 2. TELA DE LOGIN (Proteção do Painel)      -->
-    <!-- ========================================== -->
-    <div id="view-login" class="view-section">
-        <div class="box" style="max-width: 400px; margin: 40px auto;">
-            <h2>Acesso Restrito</h2>
-            <p style="text-align: center; color: #aaa; margin-bottom: 20px;">Faça login para ver sua agenda.</p>
-            <form id="form-login">
-                <div class="form-group">
-                    <label>E-mail:</label>
-                    <input type="email" id="login-email" required>
-                </div>
-                <div class="form-group">
-                    <label>Senha:</label>
-                    <input type="password" id="login-senha" required>
-                </div>
-                <button type="submit" id="btn-login" class="btn-submit">Entrar</button>
-                <div id="msg-erro-login">E-mail ou senha incorretos.</div>
-            </form>
-        </div>
-    </div>
-
-    <!-- ========================================== -->
-    <!-- 3. PAINEL ADMIN (Protegido)                -->
-    <!-- ========================================== -->
-    <div id="view-admin" class="view-section">
-        <div class="admin-header">
-            <h1>Agenda de Jean</h1>
-            <button onclick="fazerLogout()" class="btn-sair">Sair (Logout)</button>
-        </div>
-        <div class="box">
-            <h2 style="text-align: left; font-size: 1.3rem;">Próximos Clientes</h2>
-            <div id="lista-agendamentos">
-                <p style="color: #aaa;">Carregando agendamentos...</p>
-            </div>
-        </div>
+        <footer>
+            <p>&copy; 2026 Barbearia Jean Carlos. Todos os direitos reservados. | <a href="admin.html">Painel Restrito</a></p>
+        </footer>
     </div>
 
     <script>
-        // --- CREDENCIAIS DO SUPABASE FORNECIDAS ---
         const supabaseUrl = 'https://bmdhqghqcmkahpbtjhva.supabase.co';
         const supabaseKey = 'sb_publishable_qDYi15fCF75MSYywiGdSPw_nfsbKz1Z';
         const supabase = supabase.createClient(supabaseUrl, supabaseKey);
 
-        // --- NAVEGAÇÃO E SCROLL ---
-        function switchView(viewName) {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.remove('active'));
-            document.querySelectorAll('.system-switcher button').forEach(el => el.classList.remove('active'));
-            document.getElementById('view-' + viewName).classList.add('active');
-            
-            if(viewName === 'site') document.getElementById('btn-site').classList.add('active');
-            if(viewName === 'admin' || viewName === 'login') document.getElementById('btn-admin').classList.add('active');
-        }
-
         function scrollToAgendamento() {
-            if (!document.getElementById('view-site').classList.contains('active')) {
-                switchView('site');
-            }
-            setTimeout(() => {
-                document.getElementById('agendamento-section').scrollIntoView({ behavior: 'smooth' });
-            }, 100);
+            document.getElementById('agendamento-section').scrollIntoView({ behavior: 'smooth' });
         }
 
-        // --- AUTENTICAÇÃO (LOGIN / LOGOUT) ---
-        async function acessarPainel() {
-            // Verifica se o usuário já está logado
-            const { data: { session } } = await supabase.auth.getSession();
-            
-            if (session) {
-                switchView('admin');
-                carregarAgendamentos();
-            } else {
-                switchView('login');
-            }
-        }
-
-        document.getElementById('form-login').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            const btn = document.getElementById('btn-login');
-            btn.disabled = true;
-            btn.innerText = 'Autenticando...';
-            document.getElementById('msg-erro-login').style.display = 'none';
-
-            const email = document.getElementById('login-email').value;
-            const password = document.getElementById('login-senha').value;
-
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-
-            btn.disabled = false;
-            btn.innerText = 'Entrar';
-
-            if (error) {
-                document.getElementById('msg-erro-login').innerText = 'Erro: ' + error.message;
-                document.getElementById('msg-erro-login').style.display = 'block';
-            } else {
-                document.getElementById('form-login').reset();
-                switchView('admin');
-                carregarAgendamentos();
-            }
-        });
-
-        async function fazerLogout() {
-            await supabase.auth.signOut();
-            switchView('site');
-        }
-
-        // --- SALVAR AGENDAMENTO NO BANCO ---
         document.getElementById('form-agendamento').addEventListener('submit', async function(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-enviar');
@@ -302,62 +176,6 @@
             }
         });
 
-        // --- LER AGENDAMENTOS DO BANCO ---
-        async function carregarAgendamentos() {
-            const listaDiv = document.getElementById('lista-agendamentos');
-            listaDiv.innerHTML = '<p style="color: #aaa;">Buscando agendamentos...</p>';
-
-            const { data, error } = await supabase
-                .from('agendamentos')
-                .select('*')
-                .order('data', { ascending: true })
-                .order('hora', { ascending: true });
-
-            if (error) {
-                listaDiv.innerHTML = `<p style="color: #ff4c4c;">Erro ao carregar: ${error.message}</p>`;
-                return;
-            }
-
-            listaDiv.innerHTML = '';
-
-            if (data.length === 0) {
-                listaDiv.innerHTML = '<p style="color: #aaa;">Sua agenda está livre por enquanto.</p>';
-                return;
-            }
-
-            data.forEach(item => {
-                const dataFormatada = item.data.split('-').reverse().join('/');
-                const div = document.createElement('div');
-                div.className = 'agendamento-item';
-                div.innerHTML = `
-                    <div class="agendamento-info">
-                        <h4>${item.nome}</h4>
-                        <p style="color: var(--gold); margin: 3px 0;">${item.servico}</p>
-                        <p>📅 ${dataFormatada} &nbsp;|&nbsp; ⏰ ${item.hora}</p>
-                    </div>
-                    <button onclick="removerAgendamento('${item.id}')" style="background: #ff4c4c; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Concluído / Cancelar</button>
-                `;
-                listaDiv.appendChild(div);
-            });
-        }
-
-        // --- DELETAR AGENDAMENTO ---
-        async function removerAgendamento(id) {
-            if(!confirm("Deseja remover este agendamento da lista?")) return;
-            
-            const { error } = await supabase
-                .from('agendamentos')
-                .delete()
-                .eq('id', id);
-
-            if (error) {
-                alert('Erro ao remover: ' + error.message);
-            } else {
-                carregarAgendamentos();
-            }
-        }
-
-        // Configurar data mínima para agendamento (hoje)
         document.addEventListener('DOMContentLoaded', () => {
             const hoje = new Date().toISOString().split('T')[0];
             document.getElementById('data').setAttribute('min', hoje);
