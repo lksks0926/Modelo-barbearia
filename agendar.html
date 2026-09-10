@@ -54,6 +54,7 @@
         button:disabled { opacity: 0.5; cursor: not-allowed; }
         
         #msg-sucesso { display: none; text-align: center; margin-top: 20px; font-weight: bold; color: #2ecc71; padding: 10px; background: rgba(46, 204, 113, 0.1); border-radius: 6px; }
+        #msg-aviso-data { color: #e74c3c; font-size: 0.85rem; margin-top: 5px; display: none; }
         .voltar { display: block; text-align: center; margin-bottom: 20px; color: var(--gold); text-decoration: none; font-weight: bold; }
     </style>
 </head>
@@ -101,21 +102,14 @@
 
                 <div class="form-group">
                     <label for="data">Data:</label>
-                    <input type="date" id="data" required>
+                    <input type="date" id="data" required onchange="validarEBuscarHorarios()">
+                    <div id="msg-aviso-data">Domingos não abrimos. Por favor, escolha outra data!</div>
                 </div>
 
                 <div class="form-group">
-                    <label for="hora">Horário:</label>
-                    <select id="hora" required>
-                        <option value="09:00">09:00</option>
-                        <option value="10:00">10:00</option>
-                        <option value="11:00">11:00</option>
-                        <option value="14:00">14:00</option>
-                        <option value="15:00">15:00</option>
-                        <option value="16:00">16:00</option>
-                        <option value="17:00">17:00</option>
-                        <option value="18:00">18:00</option>
-                        <option value="19:00">19:00</option>
+                    <label for="hora">Horário Disponível:</label>
+                    <select id="hora" required disabled>
+                        <option value="">Selecione uma data primeiro</option>
                     </select>
                 </div>
 
@@ -130,6 +124,8 @@
         const supabaseKey = 'sb_publishable_qDYi15fCF75MSYywiGdSPw_nfsbKz1Z';
         let client;
 
+        const todosHorarios = ["09:00", "10:00", "11:00", "14:00", "15:00", "16:00", "17:00", "18:00", "19:00"];
+
         document.addEventListener('DOMContentLoaded', () => {
             if (typeof supabase !== 'undefined') {
                 client = supabase.createClient(supabaseUrl, supabaseKey);
@@ -140,15 +136,74 @@
 
         function calcularTotal() {
             let total = 0;
-            const checkboxes = document.querySelectorAll('.chk-servico');
-            
-            checkboxes.forEach(chk => {
-                if (chk.checked) {
-                    total += parseFloat(chk.getAttribute('data-preco'));
-                }
+            document.querySelectorAll('.chk-servico:checked').forEach(chk => {
+                total += parseFloat(chk.getAttribute('data-preco'));
             });
-            
             document.getElementById('valor-total').innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
+        }
+
+        async function validarEBuscarHorarios() {
+            const inputData = document.getElementById('data');
+            const selectHora = document.getElementById('hora');
+            const msgAviso = document.getElementById('msg-aviso-data');
+            const dataSelecionada = inputData.value;
+
+            if (!dataSelecionada) return;
+
+            // 1. Bloqueio de Domingo (Domingo é o dia 0 ou 6 dependendo da timezone/string)
+            const partes = dataSelecionada.split('-');
+            const diaSemana = new Date(partes[0], partes[1] - 1, partes[2]).getDay();
+            
+            if (diaSemana === 0) { // 0 = Domingo
+                msgAviso.style.display = 'block';
+                inputData.value = '';
+                selectHora.innerHTML = '<option value="">Selecione uma data primeiro</option>';
+                selectHora.disabled = true;
+                return;
+            } else {
+                msgAviso.style.display = 'none';
+            }
+
+            selectHora.disabled = true;
+            selectHora.innerHTML = '<option value="">Carregando horários vagos...</option>';
+
+            // 2. Checar se o dia está bloqueado no painel Admin
+            const { data: bloqueios } = await client
+                .from('bloqueios')
+                .select('*')
+                .eq('data', dataSelecionada);
+
+            if (bloqueios && bloqueios.length > 0) {
+                alert('A barbearia não funcionará nesta data por motivo de folga/feriado.');
+                inputData.value = '';
+                selectHora.innerHTML = '<option value="">Selecione outra data</option>';
+                return;
+            }
+
+            // 3. Buscar agendamentos existentes no dia
+            const { data: agendamentos } = await client
+                .from('agendamentos')
+                .select('hora')
+                .eq('data', dataSelecionada);
+
+            const ocupados = agendamentos ? agendamentos.map(a => a.hora) : [];
+
+            // 4. Filtrar apenas horários livres
+            const livres = todosHorarios.filter(h => !ocupados.includes(h));
+
+            selectHora.innerHTML = '';
+            if (livres.length === 0) {
+                selectHora.innerHTML = '<option value="">Nenhum horário vago nesta data</option>';
+            } else {
+                selectHora.innerHTML = '<option value="">Escolha um horário</option>';
+                livres.forEach(h => {
+                    const opt = document.createElement('option');
+                    opt.value = h;
+                    opt.innerText = h;
+                    selectHora.appendChild(opt);
+                });
+                selectHora.disabled = false;
+            }
         }
 
         document.getElementById('form-agendamento').addEventListener('submit', async function(e) {
