@@ -30,7 +30,6 @@
             color: white; border-radius: 8px; font-size: 1rem;
         }
         
-        /* Multi-serviços via Checkbox */
         .services-list { display: flex; flex-direction: column; gap: 10px; }
         .service-option {
             display: flex; align-items: center; justify-content: space-between;
@@ -77,25 +76,25 @@
                     <label>Escolha os Serviços:</label>
                     <div class="services-list">
                         <label class="service-option">
-                            <span><input type="checkbox" class="chk-servico" value="Corte Clássico" data-preco="25"> Corte Clássico</span>
+                            <span><input type="checkbox" class="chk-servico" value="Corte Clássico" data-preco="25" onchange="calcularTotal()"> Corte Clássico</span>
                             <strong style="color: var(--gold);">R$ 25,00</strong>
                         </label>
                         <label class="service-option">
-                            <span><input type="checkbox" class="chk-servico" value="Corte Degradê" data-preco="30"> Corte Degradê</span>
+                            <span><input type="checkbox" class="chk-servico" value="Corte Degradê" data-preco="30" onchange="calcularTotal()"> Corte Degradê</span>
                             <strong style="color: var(--gold);">R$ 30,00</strong>
                         </label>
                         <label class="service-option">
-                            <span><input type="checkbox" class="chk-servico" value="Barba" data-preco="20"> Barba</span>
+                            <span><input type="checkbox" class="chk-servico" value="Barba" data-preco="20" onchange="calcularTotal()"> Barba</span>
                             <strong style="color: var(--gold);">R$ 20,00</strong>
                         </label>
                         <label class="service-option">
-                            <span><input type="checkbox" class="chk-servico" value="Sobrancelha" data-preco="10"> Sobrancelha</span>
+                            <span><input type="checkbox" class="chk-servico" value="Sobrancelha" data-preco="10" onchange="calcularTotal()"> Sobrancelha</span>
                             <strong style="color: var(--gold);">R$ 10,00</strong>
                         </label>
                     </div>
 
                     <div class="total-box">
-                        <span>Valor Total Estimado:</span>
+                        <span>Valor Total:</span>
                         <span id="valor-total" style="color: var(--gold);">R$ 0,00</span>
                     </div>
                 </div>
@@ -129,50 +128,52 @@
     <script>
         const supabaseUrl = 'https://bmdhqghqcmkahpbtjhva.supabase.co';
         const supabaseKey = 'sb_publishable_qDYi15fCF75MSYywiGdSPw_nfsbKz1Z';
-        let supabase;
+        let client;
 
-        window.onload = () => {
-            supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+        document.addEventListener('DOMContentLoaded', () => {
+            if (typeof supabase !== 'undefined') {
+                client = supabase.createClient(supabaseUrl, supabaseKey);
+            }
             const hoje = new Date().toISOString().split('T')[0];
             document.getElementById('data').setAttribute('min', hoje);
-            
-            document.querySelectorAll('.chk-servico').forEach(chk => {
-                chk.addEventListener('change', calcularTotal);
-            });
-        };
+        });
 
         function calcularTotal() {
             let total = 0;
-            document.querySelectorAll('.chk-servico:checked').forEach(chk => {
-                total += parseFloat(chk.getAttribute('data-preco'));
+            const checkboxes = document.querySelectorAll('.chk-servico');
+            
+            checkboxes.forEach(chk => {
+                if (chk.checked) {
+                    total += parseFloat(chk.getAttribute('data-preco'));
+                }
             });
+            
             document.getElementById('valor-total').innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
         }
 
         document.getElementById('form-agendamento').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            // Coletar serviços selecionados
             const selecionados = [];
             document.querySelectorAll('.chk-servico:checked').forEach(chk => {
                 selecionados.push(chk.value);
             });
 
             if (selecionados.length === 0) {
-                alert('Por favor, selecione pelo menos um serviço.');
+                alert('Por favor, selecione pelo menos um serviço antes de continuar.');
                 return;
             }
 
             const btn = document.getElementById('btn-enviar');
             btn.disabled = true;
-            btn.innerText = 'Processando...';
+            btn.innerText = 'Agendando...';
 
             const nome = document.getElementById('nome').value;
-            const servico = selecionados.join(', '); // Junta os serviços marcados por vírgula
+            const servico = selecionados.join(' + ');
             const data = document.getElementById('data').value;
             const hora = document.getElementById('hora').value;
 
-            const { error } = await supabase
+            const { error } = await client
                 .from('agendamentos')
                 .insert([{ nome, servico, data, hora }]);
 
@@ -180,7 +181,7 @@
             btn.innerText = 'Confirmar Agendamento';
 
             if (error) {
-                alert('Erro ao agendar: ' + error.message);
+                alert('Erro ao realizar o agendamento: ' + error.message);
             } else {
                 document.getElementById('msg-sucesso').style.display = 'block';
                 document.getElementById('form-agendamento').reset();
@@ -188,7 +189,7 @@
                 setTimeout(() => {
                     document.getElementById('msg-sucesso').style.display = 'none';
                     window.location.href = 'index.html';
-                }, 2500);
+                }, 2000);
             }
         });
     </script>
