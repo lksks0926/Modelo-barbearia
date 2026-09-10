@@ -7,41 +7,36 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { 
-            --bg-dark: #121212; 
-            --bg-panel: #1e1e1e; 
-            --gold: #cda434; 
-            --gold-hover: #b58d2b;
+            --bg-dark: #0f0f11; 
+            --bg-panel: #18181c; 
+            --gold: #d4af37; 
+            --gold-hover: #f1c40f;
             --text-light: #f5f5f5; 
-            --border: #333; 
+            --border: #2a2a30; 
         }
         
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
         body { background-color: var(--bg-dark); color: var(--text-light); line-height: 1.6; }
         
-        .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+        .container { max-width: 800px; margin: 0 auto; padding: 30px 20px; }
         
         h1, h2 { color: var(--gold); margin-bottom: 20px; text-align: center; }
-        .box { background: var(--bg-panel); padding: 30px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 30px; }
+        .box { background: var(--bg-panel); padding: 30px; border-radius: 12px; border: 1px solid var(--border); }
         
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; color: var(--text-light); }
-        input { width: 100%; padding: 12px; background: #2a2a2a; border: 1px solid var(--border); color: white; border-radius: 4px; font-size: 1rem; }
-        input:focus { border-color: var(--gold); outline: none; }
+        input { width: 100%; padding: 12px; background: #222228; border: 1px solid var(--border); color: white; border-radius: 6px; }
         
-        button.btn-submit { width: 100%; padding: 15px; background: var(--gold); color: black; border: none; border-radius: 4px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        button.btn-submit:hover { background: var(--gold-hover); }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button.btn-submit { width: 100%; padding: 14px; background: var(--gold); color: #000; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
         
         .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
-        .btn-sair { background: transparent; color: #ff4c4c; border: 1px solid #ff4c4c; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
-        .btn-sair:hover { background: #ff4c4c; color: white; }
+        .btn-sair { background: transparent; color: #e74c3c; border: 1px solid #e74c3c; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; }
         
-        .agendamento-item { background: #2a2a2a; padding: 15px; border-radius: 6px; border-left: 4px solid var(--gold); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-        .agendamento-info h4 { margin-bottom: 5px; color: #fff; font-size: 1.1rem; }
-        .agendamento-info p { color: #aaa; font-size: 0.9rem; }
-
+        .agendamento-item { background: #222228; padding: 18px; border-radius: 8px; border-left: 4px solid var(--gold); margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .agendamento-info h4 { color: #fff; font-size: 1.1rem; }
+        
         #view-login, #view-admin { display: none; }
-        #msg-erro-login { display: none; text-align: center; margin-top: 15px; font-weight: bold; color: #ff4c4c; }
+        #msg-erro-login { display: none; text-align: center; margin-top: 15px; color: #e74c3c; font-weight: bold; }
         
         .voltar-site { text-align: center; margin-top: 20px; }
         .voltar-site a { color: var(--gold); text-decoration: none; }
@@ -54,7 +49,7 @@
         <div id="view-login">
             <div class="box" style="max-width: 400px; margin: 40px auto;">
                 <h2>Painel Restrito</h2>
-                <p style="text-align: center; color: #aaa; margin-bottom: 20px;">Entre com suas credenciais de admin.</p>
+                <p style="text-align: center; color: #aaa; margin-bottom: 20px;">Digite suas credenciais de administrador.</p>
                 <form id="form-login">
                     <div class="form-group">
                         <label>E-mail:</label>
@@ -76,13 +71,12 @@
         <!-- PAINEL ADMINISTRATIVO -->
         <div id="view-admin">
             <div class="admin-header">
-                <h1>Agenda de Jean</h1>
-                <button onclick="fazerLogout()" class="btn-sair">Sair (Logout)</button>
+                <h1>Agenda do Dia</h1>
+                <button onclick="fazerLogout()" class="btn-sair">Sair</button>
             </div>
             <div class="box">
-                <h2 style="text-align: left; font-size: 1.3rem;">Próximos Clientes</h2>
                 <div id="lista-agendamentos">
-                    <p style="color: #aaa;">Carregando agendamentos...</p>
+                    <p style="color: #aaa; text-align: center;">Carregando agendamentos...</p>
                 </div>
             </div>
             <div class="voltar-site">
@@ -94,15 +88,25 @@
     <script>
         const supabaseUrl = 'https://bmdhqghqcmkahpbtjhva.supabase.co';
         const supabaseKey = 'sb_publishable_qDYi15fCF75MSYywiGdSPw_nfsbKz1Z';
-        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+        let supabase;
 
-        // Verifica se já está logado ao abrir a página
+        window.onload = async () => {
+            supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+            await verificarSessao();
+        };
+
         async function verificarSessao() {
-            const { data: { session } } = await supabase.auth.getSession();
-            if (session) {
-                document.getElementById('view-admin').style.display = 'block';
-                carregarAgendamentos();
-            } else {
+            try {
+                const { data: { session } } = await supabase.auth.getSession();
+                if (session) {
+                    document.getElementById('view-login').style.display = 'none';
+                    document.getElementById('view-admin').style.display = 'block';
+                    carregarAgendamentos();
+                } else {
+                    document.getElementById('view-admin').style.display = 'none';
+                    document.getElementById('view-login').style.display = 'block';
+                }
+            } catch (err) {
                 document.getElementById('view-login').style.display = 'block';
             }
         }
@@ -117,7 +121,7 @@
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-senha').value;
 
-            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+            const { error } = await supabase.auth.signInWithPassword({ email, password });
 
             btn.disabled = false;
             btn.innerText = 'Entrar';
@@ -126,22 +130,18 @@
                 document.getElementById('msg-erro-login').innerText = 'Erro: ' + error.message;
                 document.getElementById('msg-erro-login').style.display = 'block';
             } else {
-                document.getElementById('form-login').reset();
-                document.getElementById('view-login').style.display = 'none';
-                document.getElementById('view-admin').style.display = 'block';
-                carregarAgendamentos();
+                verificarSessao();
             }
         });
 
         async function fazerLogout() {
             await supabase.auth.signOut();
-            document.getElementById('view-admin').style.display = 'none';
-            document.getElementById('view-login').style.display = 'block';
+            verificarSessao();
         }
 
         async function carregarAgendamentos() {
             const listaDiv = document.getElementById('lista-agendamentos');
-            listaDiv.innerHTML = '<p style="color: #aaa;">Buscando agendamentos...</p>';
+            listaDiv.innerHTML = '<p style="color: #aaa; text-align: center;">Buscando agendamentos...</p>';
 
             const { data, error } = await supabase
                 .from('agendamentos')
@@ -150,14 +150,14 @@
                 .order('hora', { ascending: true });
 
             if (error) {
-                listaDiv.innerHTML = `<p style="color: #ff4c4c;">Erro ao carregar: ${error.message}</p>`;
+                listaDiv.innerHTML = `<p style="color: #e74c3c;">Erro ao carregar: ${error.message}</p>`;
                 return;
             }
 
             listaDiv.innerHTML = '';
 
             if (data.length === 0) {
-                listaDiv.innerHTML = '<p style="color: #aaa;">Sua agenda está livre por enquanto.</p>';
+                listaDiv.innerHTML = '<p style="color: #aaa; text-align: center;">Nenhum agendamento cadastrado.</p>';
                 return;
             }
 
@@ -168,32 +168,21 @@
                 div.innerHTML = `
                     <div class="agendamento-info">
                         <h4>${item.nome}</h4>
-                        <p style="color: var(--gold); margin: 3px 0;">${item.servico}</p>
-                        <p>📅 ${dataFormatada} &nbsp;|&nbsp; ⏰ ${item.hora}</p>
+                        <p style="color: var(--gold); font-weight: bold;">${item.servico}</p>
+                        <p style="color: #aaa; font-size: 0.9rem;">📅 ${dataFormatada} às ⏰ ${item.hora}</p>
                     </div>
-                    <button onclick="removerAgendamento('${item.id}')" style="background: #ff4c4c; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Concluído / Cancelar</button>
+                    <button onclick="removerAgendamento('${item.id}')" style="background: #e74c3c; color: white; border: none; padding: 10px 14px; border-radius: 6px; cursor: pointer;">Concluir</button>
                 `;
                 listaDiv.appendChild(div);
             });
         }
 
         async function removerAgendamento(id) {
-            if(!confirm("Deseja remover este agendamento da lista?")) return;
-            
-            const { error } = await supabase
-                .from('agendamentos')
-                .delete()
-                .eq('id', id);
-
-            if (error) {
-                alert('Erro ao remover: ' + error.message);
-            } else {
-                carregarAgendamentos();
-            }
+            if(!confirm("Concluir ou cancelar este agendamento?")) return;
+            const { error } = await supabase.from('agendamentos').delete().eq('id', id);
+            if (error) alert('Erro: ' + error.message);
+            else carregarAgendamentos();
         }
-
-        verificarSessao();
     </script>
 </body>
 </html>
-
