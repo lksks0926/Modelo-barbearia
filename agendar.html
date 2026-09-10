@@ -25,16 +25,31 @@
         
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; color: var(--text-light); font-weight: 500; }
-        input, select { 
+        input[type="text"], input[type="date"], select { 
             width: 100%; padding: 14px; background: #222228; border: 1px solid var(--border); 
-            color: white; border-radius: 8px; font-size: 1rem; transition: 0.3s;
+            color: white; border-radius: 8px; font-size: 1rem;
         }
-        input:focus, select:focus { border-color: var(--gold); outline: none; }
         
+        /* Multi-serviços via Checkbox */
+        .services-list { display: flex; flex-direction: column; gap: 10px; }
+        .service-option {
+            display: flex; align-items: center; justify-content: space-between;
+            background: #222228; padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border);
+            cursor: pointer; transition: 0.2s;
+        }
+        .service-option:hover { border-color: var(--gold); }
+        .service-option input { width: 18px; height: 18px; accent-color: var(--gold); cursor: pointer; }
+        
+        .total-box {
+            background: #28251e; border: 1px solid var(--gold); padding: 15px; border-radius: 8px;
+            display: flex; justify-content: space-between; align-items: center; margin-top: 15px;
+            font-weight: bold; font-size: 1.1rem;
+        }
+
         button.btn-submit { 
             width: 100%; padding: 16px; background: var(--gold); color: #000; 
             border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; 
-            cursor: pointer; transition: 0.3s; margin-top: 10px;
+            cursor: pointer; transition: 0.3s; margin-top: 20px;
         }
         button.btn-submit:hover { background: var(--gold-hover); }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -46,30 +61,50 @@
 <body>
 
     <div class="container">
-        <a href="index.html" class="voltar">← Voltar para o Inicio</a>
+        <a href="index.html" class="voltar">← Voltar para o Início</a>
 
         <div class="box">
-            <h1>Novo Agendamento</h1>
-            <p style="text-align: center; color: #aaa; margin-bottom: 25px;">Preencha os dados abaixo para reservar o seu horário.</p>
+            <h1>Agendar Horário</h1>
+            <p style="text-align: center; color: #aaa; margin-bottom: 25px;">Selecione um ou mais serviços desejados.</p>
 
             <form id="form-agendamento">
                 <div class="form-group">
                     <label for="nome">Seu Nome Completo:</label>
                     <input type="text" id="nome" required placeholder="Ex: João Silva">
                 </div>
+
                 <div class="form-group">
-                    <label for="servico">Serviço Desejado:</label>
-                    <select id="servico" required>
-                        <option value="Corte Degradê">Corte Degradê - R$ 35,00</option>
-                        <option value="Corte Clássico">Corte Clássico - R$ 30,00</option>
-                        <option value="Corte + Barba">Corte + Barba - R$ 55,00</option>
-                        <option value="Barboterapia">Barboterapia - R$ 35,00</option>
-                    </select>
+                    <label>Escolha os Serviços:</label>
+                    <div class="services-list">
+                        <label class="service-option">
+                            <span><input type="checkbox" class="chk-servico" value="Corte Clássico" data-preco="25"> Corte Clássico</span>
+                            <strong style="color: var(--gold);">R$ 25,00</strong>
+                        </label>
+                        <label class="service-option">
+                            <span><input type="checkbox" class="chk-servico" value="Corte Degradê" data-preco="30"> Corte Degradê</span>
+                            <strong style="color: var(--gold);">R$ 30,00</strong>
+                        </label>
+                        <label class="service-option">
+                            <span><input type="checkbox" class="chk-servico" value="Barba" data-preco="20"> Barba</span>
+                            <strong style="color: var(--gold);">R$ 20,00</strong>
+                        </label>
+                        <label class="service-option">
+                            <span><input type="checkbox" class="chk-servico" value="Sobrancelha" data-preco="10"> Sobrancelha</span>
+                            <strong style="color: var(--gold);">R$ 10,00</strong>
+                        </label>
+                    </div>
+
+                    <div class="total-box">
+                        <span>Valor Total Estimado:</span>
+                        <span id="valor-total" style="color: var(--gold);">R$ 0,00</span>
+                    </div>
                 </div>
+
                 <div class="form-group">
                     <label for="data">Data:</label>
                     <input type="date" id="data" required>
                 </div>
+
                 <div class="form-group">
                     <label for="hora">Horário:</label>
                     <select id="hora" required>
@@ -80,8 +115,11 @@
                         <option value="15:00">15:00</option>
                         <option value="16:00">16:00</option>
                         <option value="17:00">17:00</option>
+                        <option value="18:00">18:00</option>
+                        <option value="19:00">19:00</option>
                     </select>
                 </div>
+
                 <button type="submit" id="btn-enviar" class="btn-submit">Confirmar Agendamento</button>
                 <div id="msg-sucesso">✅ Agendamento realizado com sucesso!</div>
             </form>
@@ -97,16 +135,40 @@
             supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
             const hoje = new Date().toISOString().split('T')[0];
             document.getElementById('data').setAttribute('min', hoje);
+            
+            document.querySelectorAll('.chk-servico').forEach(chk => {
+                chk.addEventListener('change', calcularTotal);
+            });
         };
+
+        function calcularTotal() {
+            let total = 0;
+            document.querySelectorAll('.chk-servico:checked').forEach(chk => {
+                total += parseFloat(chk.getAttribute('data-preco'));
+            });
+            document.getElementById('valor-total').innerText = `R$ ${total.toFixed(2).replace('.', ',')}`;
+        }
 
         document.getElementById('form-agendamento').addEventListener('submit', async function(e) {
             e.preventDefault();
+            
+            // Coletar serviços selecionados
+            const selecionados = [];
+            document.querySelectorAll('.chk-servico:checked').forEach(chk => {
+                selecionados.push(chk.value);
+            });
+
+            if (selecionados.length === 0) {
+                alert('Por favor, selecione pelo menos um serviço.');
+                return;
+            }
+
             const btn = document.getElementById('btn-enviar');
             btn.disabled = true;
             btn.innerText = 'Processando...';
 
             const nome = document.getElementById('nome').value;
-            const servico = document.getElementById('servico').value;
+            const servico = selecionados.join(', '); // Junta os serviços marcados por vírgula
             const data = document.getElementById('data').value;
             const hora = document.getElementById('hora').value;
 
@@ -122,6 +184,7 @@
             } else {
                 document.getElementById('msg-sucesso').style.display = 'block';
                 document.getElementById('form-agendamento').reset();
+                calcularTotal();
                 setTimeout(() => {
                     document.getElementById('msg-sucesso').style.display = 'none';
                     window.location.href = 'index.html';
@@ -131,4 +194,3 @@
     </script>
 </body>
 </html>
-
