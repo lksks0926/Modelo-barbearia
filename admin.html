@@ -36,7 +36,6 @@
             margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; 
         }
         
-        /* Telas de visibilidade controlada explicitamente */
         #view-loading { text-align: center; padding: 40px; color: #aaa; }
         #view-login { display: none; }
         #view-admin { display: none; }
@@ -52,14 +51,14 @@
         
         <!-- ESTADO DE CARREGAMENTO INICIAL -->
         <div id="view-loading" class="box">
-            <p>Carregando Painel Administrativo...</p>
+            <p>Conectando ao painel...</p>
         </div>
 
         <!-- TELA DE LOGIN -->
         <div id="view-login">
             <div class="box" style="max-width: 400px; margin: 20px auto;">
                 <h2>Acesso Restrito</h2>
-                <p style="text-align: center; color: #aaa; margin-bottom: 20px;">Entre com suas credenciais.</p>
+                <p style="text-align: center; color: #aaa; margin-bottom: 20px;">Entre com suas credenciais de admin.</p>
                 <form id="form-login">
                     <div class="form-group">
                         <label>E-mail:</label>
@@ -99,29 +98,29 @@
     <script>
         const supabaseUrl = 'https://bmdhqghqcmkahpbtjhva.supabase.co';
         const supabaseKey = 'sb_publishable_qDYi15fCF75MSYywiGdSPw_nfsbKz1Z';
-        let supabase;
+        let client;
 
-        // Inicialização robusta ao carregar a página completamente
-        window.addEventListener('load', async () => {
+        // Inicializador seguro sem travar em loop
+        document.addEventListener('DOMContentLoaded', async () => {
             try {
-                if (typeof window.supabase === 'undefined') {
-                    throw new Error("Erro ao carregar Supabase via CDN.");
+                if (typeof supabase === 'undefined') {
+                    throw new Error("A biblioteca Supabase não pôde ser carregada.");
                 }
-                supabase = window.supabase.createClient(supabaseUrl, supabaseKey);
+                client = supabase.createClient(supabaseUrl, supabaseKey);
                 await checarSessao();
             } catch (err) {
                 document.getElementById('view-loading').innerHTML = `
-                    <p style="color:#e74c3c;">Erro ao inicializar o painel: ${err.message}</p>
-                    <button onclick="location.reload()" style="margin-top:15px; padding:8px 15px;">Tentar Novamente</button>
+                    <p style="color:#e74c3c;">Erro ao conectar: ${err.message}</p>
+                    <button onclick="location.reload()" style="margin-top:15px; padding:8px 15px; cursor:pointer;">Tentar Novamente</button>
                 `;
             }
         });
 
         async function checarSessao() {
             document.getElementById('view-loading').style.display = 'none';
-            const { data: { session } } = await supabase.auth.getSession();
+            const { data: { session }, error } = await client.auth.getSession();
 
-            if (session) {
+            if (session && !error) {
                 document.getElementById('view-login').style.display = 'none';
                 document.getElementById('view-admin').style.display = 'block';
                 carregarAgendamentos();
@@ -143,7 +142,7 @@
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-senha').value;
 
-            const { error } = await supabase.auth.signInWithPassword({ email, password });
+            const { error } = await client.auth.signInWithPassword({ email, password });
 
             btn.disabled = false;
             btn.innerText = 'Entrar';
@@ -157,7 +156,7 @@
         });
 
         async function fazerLogout() {
-            await supabase.auth.signOut();
+            await client.auth.signOut();
             checarSessao();
         }
 
@@ -165,21 +164,21 @@
             const listaDiv = document.getElementById('lista-agendamentos');
             listaDiv.innerHTML = '<p style="color: #aaa; text-align: center;">Buscando agendamentos...</p>';
 
-            const { data, error } = await supabase
+            const { data, error } = await client
                 .from('agendamentos')
                 .select('*')
                 .order('data', { ascending: true })
                 .order('hora', { ascending: true });
 
             if (error) {
-                listaDiv.innerHTML = `<p style="color: #e74c3c; text-align: center;">Erro: ${error.message}</p>`;
+                listaDiv.innerHTML = `<p style="color: #e74c3c; text-align: center;">Erro ao carregar: ${error.message}</p>`;
                 return;
             }
 
             listaDiv.innerHTML = '';
 
-            if (data.length === 0) {
-                listaDiv.innerHTML = '<p style="color: #aaa; text-align: center;">Nenhum agendamento encontrado.</p>';
+            if (!data || data.length === 0) {
+                listaDiv.innerHTML = '<p style="color: #aaa; text-align: center;">Nenhum agendamento cadastrado.</p>';
                 return;
             }
 
@@ -200,8 +199,8 @@
         }
 
         async function removerAgendamento(id) {
-            if(!confirm("Marcar agendamento como concluído/cancelado?")) return;
-            const { error } = await supabase.from('agendamentos').delete().eq('id', id);
+            if(!confirm("Concluir ou cancelar este agendamento?")) return;
+            const { error } = await client.from('agendamentos').delete().eq('id', id);
             if (error) alert('Erro ao excluir: ' + error.message);
             else carregarAgendamentos();
         }
