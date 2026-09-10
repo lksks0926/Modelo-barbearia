@@ -5,57 +5,62 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Agendamento - Barbearia Jean Carlos</title>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Montserrat:wght@400;500;600&display=swap" rel="stylesheet">
+    
     <style>
         :root { 
-            --bg-dark: #0f0f11; 
-            --bg-panel: #18181c; 
-            --gold: #d4af37; 
-            --gold-hover: #f1c40f;
+            --bg-dark: #0B0B0B; 
+            --bg-panel: #151515; 
+            --bronze: #A57164; 
+            --bronze-hover: #C28878;
             --text-light: #f5f5f5; 
-            --border: #2a2a30; 
+            --ice-white: #E8ECEF;
+            --border: #2A2A30; 
         }
         
-        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
-        body { background-color: var(--bg-dark); color: var(--text-light); line-height: 1.6; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { background-color: var(--bg-dark); color: var(--text-light); line-height: 1.6; font-family: 'Montserrat', sans-serif; }
         
         .container { max-width: 600px; margin: 0 auto; padding: 30px 20px; }
         
-        h1 { color: var(--gold); margin-bottom: 10px; text-align: center; }
+        h1 { font-family: 'Cinzel', serif; color: var(--bronze); margin-bottom: 10px; text-align: center; }
         .box { background: var(--bg-panel); padding: 30px; border-radius: 12px; border: 1px solid var(--border); }
         
         .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; color: var(--text-light); font-weight: 500; }
+        label { display: block; margin-bottom: 8px; color: var(--ice-white); font-weight: 500; }
         input[type="text"], input[type="date"], select { 
-            width: 100%; padding: 14px; background: #222228; border: 1px solid var(--border); 
-            color: white; border-radius: 8px; font-size: 1rem;
+            width: 100%; padding: 14px; background: #1C1C1C; border: 1px solid var(--border); 
+            color: white; border-radius: 8px; font-size: 1rem; font-family: 'Montserrat', sans-serif;
         }
         
         .services-list { display: flex; flex-direction: column; gap: 10px; }
         .service-option {
             display: flex; align-items: center; justify-content: space-between;
-            background: #222228; padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border);
-            cursor: pointer; transition: 0.2s;
+            background: #1C1C1C; padding: 12px 15px; border-radius: 8px; border: 1px solid var(--border);
+            cursor: pointer; transition: 0.2s; color: var(--ice-white);
         }
-        .service-option:hover { border-color: var(--gold); }
-        .service-option input { width: 18px; height: 18px; accent-color: var(--gold); cursor: pointer; }
+        .service-option:hover { border-color: var(--bronze); }
+        .service-option input { width: 18px; height: 18px; accent-color: var(--bronze); cursor: pointer; }
         
         .total-box {
-            background: #28251e; border: 1px solid var(--gold); padding: 15px; border-radius: 8px;
+            background: #221c1a; border: 1px solid var(--bronze); padding: 15px; border-radius: 8px;
             display: flex; justify-content: space-between; align-items: center; margin-top: 15px;
-            font-weight: bold; font-size: 1.1rem;
+            font-weight: bold; font-size: 1.1rem; color: var(--ice-white);
         }
 
         button.btn-submit { 
-            width: 100%; padding: 16px; background: var(--gold); color: #000; 
+            width: 100%; padding: 16px; background: var(--bronze); color: #fff; 
             border: none; border-radius: 8px; font-size: 1.1rem; font-weight: bold; 
-            cursor: pointer; transition: 0.3s; margin-top: 20px;
+            cursor: pointer; transition: 0.3s; margin-top: 20px; font-family: 'Montserrat', sans-serif;
         }
-        button.btn-submit:hover { background: var(--gold-hover); }
+        button.btn-submit:hover { background: var(--bronze-hover); }
         button:disabled { opacity: 0.5; cursor: not-allowed; }
         
         #msg-sucesso { display: none; text-align: center; margin-top: 20px; font-weight: bold; color: #2ecc71; padding: 10px; background: rgba(46, 204, 113, 0.1); border-radius: 6px; }
         #msg-aviso-data { color: #e74c3c; font-size: 0.85rem; margin-top: 5px; display: none; }
-        .voltar { display: block; text-align: center; margin-bottom: 20px; color: var(--gold); text-decoration: none; font-weight: bold; }
+        .voltar { display: block; text-align: center; margin-bottom: 20px; color: var(--bronze); text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -65,7 +70,7 @@
 
         <div class="box">
             <h1>Agendar Horário</h1>
-            <p style="text-align: center; color: #aaa; margin-bottom: 25px;">Selecione um ou mais serviços desejados.</p>
+            <p style="text-align: center; color: var(--ice-white); margin-bottom: 25px;">Selecione um ou mais serviços desejados.</p>
 
             <form id="form-agendamento">
                 <div class="form-group">
@@ -78,25 +83,25 @@
                     <div class="services-list">
                         <label class="service-option">
                             <span><input type="checkbox" class="chk-servico" value="Corte Clássico" data-preco="25" onchange="calcularTotal()"> Corte Clássico</span>
-                            <strong style="color: var(--gold);">R$ 25,00</strong>
+                            <strong style="color: var(--bronze); font-family: 'Cinzel', serif;">R$ 25,00</strong>
                         </label>
                         <label class="service-option">
                             <span><input type="checkbox" class="chk-servico" value="Corte Degradê" data-preco="30" onchange="calcularTotal()"> Corte Degradê</span>
-                            <strong style="color: var(--gold);">R$ 30,00</strong>
+                            <strong style="color: var(--bronze); font-family: 'Cinzel', serif;">R$ 30,00</strong>
                         </label>
                         <label class="service-option">
                             <span><input type="checkbox" class="chk-servico" value="Barba" data-preco="20" onchange="calcularTotal()"> Barba</span>
-                            <strong style="color: var(--gold);">R$ 20,00</strong>
+                            <strong style="color: var(--bronze); font-family: 'Cinzel', serif;">R$ 20,00</strong>
                         </label>
                         <label class="service-option">
                             <span><input type="checkbox" class="chk-servico" value="Sobrancelha" data-preco="10" onchange="calcularTotal()"> Sobrancelha</span>
-                            <strong style="color: var(--gold);">R$ 10,00</strong>
+                            <strong style="color: var(--bronze); font-family: 'Cinzel', serif;">R$ 10,00</strong>
                         </label>
                     </div>
 
                     <div class="total-box">
                         <span>Valor Total:</span>
-                        <span id="valor-total" style="color: var(--gold);">R$ 0,00</span>
+                        <span id="valor-total" style="color: var(--bronze); font-family: 'Cinzel', serif;">R$ 0,00</span>
                     </div>
                 </div>
 
