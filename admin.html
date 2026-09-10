@@ -20,7 +20,7 @@
         .container { max-width: 800px; margin: 0 auto; padding: 30px 20px; }
         .box { background: var(--bg-panel); padding: 30px; border-radius: 12px; border: 1px solid var(--border); margin-bottom: 20px; }
         
-        h1, h2 { color: var(--gold); text-align: center; margin-bottom: 15px; }
+        h1, h2, h3 { color: var(--gold); text-align: center; margin-bottom: 15px; }
         
         .form-group { margin-bottom: 15px; }
         label { display: block; margin-bottom: 5px; }
@@ -34,6 +34,11 @@
         .agendamento-item { 
             background: #222228; padding: 18px; border-radius: 8px; border-left: 4px solid var(--gold); 
             margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; 
+        }
+
+        .bloqueio-item {
+            background: #2b1f1f; padding: 12px 15px; border-radius: 6px; border-left: 4px solid #e74c3c;
+            display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;
         }
         
         #view-loading { text-align: center; padding: 40px; color: #aaa; }
@@ -49,7 +54,6 @@
 
     <div class="container">
         
-        <!-- ESTADO DE CARREGAMENTO INICIAL -->
         <div id="view-loading" class="box">
             <p>Conectando ao painel...</p>
         </div>
@@ -80,14 +84,28 @@
         <!-- TELA DO PAINEL ADMIN -->
         <div id="view-admin">
             <div class="admin-header">
-                <h1>Agenda de Clientes</h1>
+                <h1>Painel do Barbeiro</h1>
                 <button onclick="fazerLogout()" class="btn-sair">Sair</button>
             </div>
+
+            <!-- BLOQUEIO DE DATAS -->
             <div class="box">
+                <h3 style="text-align: left; margin-bottom: 10px;">🚫 Bloquear Dia / Folga</h3>
+                <div style="display: flex; gap: 10px; margin-bottom: 15px;">
+                    <input type="date" id="data-bloqueio" style="flex: 1;">
+                    <button onclick="bloquearData()" style="padding: 10px 20px; background: #e74c3c; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer;">Bloquear Data</button>
+                </div>
+                <div id="lista-bloqueios"></div>
+            </div>
+
+            <!-- LISTA DE AGENDAMENTOS -->
+            <div class="box">
+                <h3 style="text-align: left; margin-bottom: 15px;">📅 Próximos Agendamentos</h3>
                 <div id="lista-agendamentos">
                     <p style="color: #aaa; text-align: center;">Carregando dados da agenda...</p>
                 </div>
             </div>
+
             <div class="voltar-site">
                 <a href="index.html">← Ir para o site público</a>
             </div>
@@ -100,30 +118,25 @@
         const supabaseKey = 'sb_publishable_qDYi15fCF75MSYywiGdSPw_nfsbKz1Z';
         let client;
 
-        // Inicializador seguro sem travar em loop
         document.addEventListener('DOMContentLoaded', async () => {
             try {
-                if (typeof supabase === 'undefined') {
-                    throw new Error("A biblioteca Supabase não pôde ser carregada.");
-                }
+                if (typeof supabase === 'undefined') throw new Error("Supabase não carregado");
                 client = supabase.createClient(supabaseUrl, supabaseKey);
                 await checarSessao();
             } catch (err) {
-                document.getElementById('view-loading').innerHTML = `
-                    <p style="color:#e74c3c;">Erro ao conectar: ${err.message}</p>
-                    <button onclick="location.reload()" style="margin-top:15px; padding:8px 15px; cursor:pointer;">Tentar Novamente</button>
-                `;
+                document.getElementById('view-loading').innerHTML = `<p style="color:#e74c3c;">Erro: ${err.message}</p>`;
             }
         });
 
         async function checarSessao() {
             document.getElementById('view-loading').style.display = 'none';
-            const { data: { session }, error } = await client.auth.getSession();
+            const { data: { session } } = await client.auth.getSession();
 
-            if (session && !error) {
+            if (session) {
                 document.getElementById('view-login').style.display = 'none';
                 document.getElementById('view-admin').style.display = 'block';
                 carregarAgendamentos();
+                carregarBloqueios();
             } else {
                 document.getElementById('view-admin').style.display = 'none';
                 document.getElementById('view-login').style.display = 'block';
@@ -133,23 +146,17 @@
         document.getElementById('form-login').addEventListener('submit', async function(e) {
             e.preventDefault();
             const btn = document.getElementById('btn-login');
-            const msgErro = document.getElementById('msg-erro');
-            
-            btn.disabled = true;
-            btn.innerText = 'Autenticando...';
-            msgErro.style.display = 'none';
+            btn.disabled = true; btn.innerText = 'Autenticando...';
 
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-senha').value;
 
             const { error } = await client.auth.signInWithPassword({ email, password });
-
-            btn.disabled = false;
-            btn.innerText = 'Entrar';
+            btn.disabled = false; btn.innerText = 'Entrar';
 
             if (error) {
-                msgErro.innerText = 'Erro: ' + error.message;
-                msgErro.style.display = 'block';
+                document.getElementById('msg-erro').innerText = error.message;
+                document.getElementById('msg-erro').style.display = 'block';
             } else {
                 checarSessao();
             }
@@ -162,26 +169,14 @@
 
         async function carregarAgendamentos() {
             const listaDiv = document.getElementById('lista-agendamentos');
-            listaDiv.innerHTML = '<p style="color: #aaa; text-align: center;">Buscando agendamentos...</p>';
+            const { data, error } = await client.from('agendamentos').select('*').order('data', { ascending: true }).order('hora', { ascending: true });
 
-            const { data, error } = await client
-                .from('agendamentos')
-                .select('*')
-                .order('data', { ascending: true })
-                .order('hora', { ascending: true });
-
-            if (error) {
-                listaDiv.innerHTML = `<p style="color: #e74c3c; text-align: center;">Erro ao carregar: ${error.message}</p>`;
+            if (error || !data || data.length === 0) {
+                listaDiv.innerHTML = '<p style="color: #aaa; text-align: center;">Nenhum agendamento encontrado.</p>';
                 return;
             }
 
             listaDiv.innerHTML = '';
-
-            if (!data || data.length === 0) {
-                listaDiv.innerHTML = '<p style="color: #aaa; text-align: center;">Nenhum agendamento cadastrado.</p>';
-                return;
-            }
-
             data.forEach(item => {
                 const dataFormatada = item.data.split('-').reverse().join('/');
                 const div = document.createElement('div');
@@ -189,7 +184,7 @@
                 div.innerHTML = `
                     <div>
                         <h4 style="color:#fff;">${item.nome}</h4>
-                        <p style="color: var(--gold); font-weight: bold; font-size: 0.95rem;">${item.servico}</p>
+                        <p style="color: var(--gold); font-weight: bold;">${item.servico}</p>
                         <p style="color: #aaa; font-size: 0.85rem;">📅 ${dataFormatada} às ⏰ ${item.hora}</p>
                     </div>
                     <button onclick="removerAgendamento('${item.id}')" style="background: #e74c3c; color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer;">Concluir</button>
@@ -199,11 +194,51 @@
         }
 
         async function removerAgendamento(id) {
-            if(!confirm("Concluir ou cancelar este agendamento?")) return;
-            const { error } = await client.from('agendamentos').delete().eq('id', id);
-            if (error) alert('Erro ao excluir: ' + error.message);
-            else carregarAgendamentos();
+            if(!confirm("Concluir agendamento?")) return;
+            await client.from('agendamentos').delete().eq('id', id);
+            carregarAgendamentos();
+        }
+
+        /* --- LÓGICA DE BLOQUEIOS DE DATA --- */
+        async function bloquearData() {
+            const dataInput = document.getElementById('data-bloqueio').value;
+            if(!dataInput) return alert('Selecione uma data para bloquear.');
+
+            const { error } = await client.from('bloqueios').insert([{ data: dataInput }]);
+            if (error) alert('Data já está bloqueada ou ocorreu um erro.');
+            else {
+                document.getElementById('data-bloqueio').value = '';
+                carregarBloqueios();
+            }
+        }
+
+        async function carregarBloqueios() {
+            const listaDiv = document.getElementById('lista-bloqueios');
+            const { data } = await client.from('bloqueios').select('*').order('data', { ascending: true });
+
+            if (!data || data.length === 0) {
+                listaDiv.innerHTML = '<p style="color: #666; font-size: 0.85rem;">Nenhum dia bloqueado manualmente.</p>';
+                return;
+            }
+
+            listaDiv.innerHTML = '<p style="color: #aaa; font-size: 0.85rem; margin-bottom: 5px;">Dias Fechados/Folgas:</p>';
+            data.forEach(item => {
+                const dataFormatada = item.data.split('-').reverse().join('/');
+                const div = document.createElement('div');
+                div.className = 'bloqueio-item';
+                div.innerHTML = `
+                    <span>🚫 ${dataFormatada}</span>
+                    <button onclick="desbloquearData('${item.id}')" style="background: transparent; color: #aaa; border: 1px solid #555; padding: 4px 8px; border-radius: 4px; cursor: pointer;">Desbloquear</button>
+                `;
+                listaDiv.appendChild(div);
+            });
+        }
+
+        async function desbloquearData(id) {
+            await client.from('bloqueios').delete().eq('id', id);
+            carregarBloqueios();
         }
     </script>
 </body>
 </html>
+
