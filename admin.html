@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Administrativo - Barbearia</title>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        :root { 
+            --bg-dark: #121212; 
+            --bg-panel: #1e1e1e; 
+            --gold: #cda434; 
+            --gold-hover: #b58d2b;
+            --text-light: #f5f5f5; 
+            --border: #333; 
+        }
+        
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', sans-serif; }
+        body { background-color: var(--bg-dark); color: var(--text-light); line-height: 1.6; }
+        
+        .container { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
+        
+        h1, h2 { color: var(--gold); margin-bottom: 20px; text-align: center; }
+        .box { background: var(--bg-panel); padding: 30px; border-radius: 8px; border: 1px solid var(--border); margin-bottom: 30px; }
+        
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: var(--text-light); }
+        input { width: 100%; padding: 12px; background: #2a2a2a; border: 1px solid var(--border); color: white; border-radius: 4px; font-size: 1rem; }
+        input:focus { border-color: var(--gold); outline: none; }
+        
+        button.btn-submit { width: 100%; padding: 15px; background: var(--gold); color: black; border: none; border-radius: 4px; font-size: 1.1rem; font-weight: bold; cursor: pointer; transition: 0.3s; }
+        button.btn-submit:hover { background: var(--gold-hover); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .admin-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .btn-sair { background: transparent; color: #ff4c4c; border: 1px solid #ff4c4c; padding: 8px 15px; border-radius: 4px; cursor: pointer; }
+        .btn-sair:hover { background: #ff4c4c; color: white; }
+        
+        .agendamento-item { background: #2a2a2a; padding: 15px; border-radius: 6px; border-left: 4px solid var(--gold); margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .agendamento-info h4 { margin-bottom: 5px; color: #fff; font-size: 1.1rem; }
+        .agendamento-info p { color: #aaa; font-size: 0.9rem; }
+
+        #view-login, #view-admin { display: none; }
+        #msg-erro-login { display: none; text-align: center; margin-top: 15px; font-weight: bold; color: #ff4c4c; }
+        
+        .voltar-site { text-align: center; margin-top: 20px; }
+        .voltar-site a { color: var(--gold); text-decoration: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- TELA DE LOGIN -->
+        <div id="view-login">
+            <div class="box" style="max-width: 400px; margin: 40px auto;">
+                <h2>Painel Restrito</h2>
+                <p style="text-align: center; color: #aaa; margin-bottom: 20px;">Entre com suas credenciais de admin.</p>
+                <form id="form-login">
+                    <div class="form-group">
+                        <label>E-mail:</label>
+                        <input type="email" id="login-email" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Senha:</label>
+                        <input type="password" id="login-senha" required>
+                    </div>
+                    <button type="submit" id="btn-login" class="btn-submit">Entrar</button>
+                    <div id="msg-erro-login">E-mail ou senha incorretos.</div>
+                </form>
+                <div class="voltar-site">
+                    <a href="index.html">← Voltar para o Site</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAINEL ADMINISTRATIVO -->
+        <div id="view-admin">
+            <div class="admin-header">
+                <h1>Agenda de Jean</h1>
+                <button onclick="fazerLogout()" class="btn-sair">Sair (Logout)</button>
+            </div>
+            <div class="box">
+                <h2 style="text-align: left; font-size: 1.3rem;">Próximos Clientes</h2>
+                <div id="lista-agendamentos">
+                    <p style="color: #aaa;">Carregando agendamentos...</p>
+                </div>
+            </div>
+            <div class="voltar-site">
+                <a href="index.html">← Ir para o site público</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const supabaseUrl = 'https://bmdhqghqcmkahpbtjhva.supabase.co';
+        const supabaseKey = 'sb_publishable_qDYi15fCF75MSYywiGdSPw_nfsbKz1Z';
+        const supabase = supabase.createClient(supabaseUrl, supabaseKey);
+
+        // Verifica se já está logado ao abrir a página
+        async function verificarSessao() {
+            const { data: { session } } = await supabase.auth.getSession();
+            if (session) {
+                document.getElementById('view-admin').style.display = 'block';
+                carregarAgendamentos();
+            } else {
+                document.getElementById('view-login').style.display = 'block';
+            }
+        }
+
+        document.getElementById('form-login').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById('btn-login');
+            btn.disabled = true;
+            btn.innerText = 'Autenticando...';
+            document.getElementById('msg-erro-login').style.display = 'none';
+
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-senha').value;
+
+            const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+
+            btn.disabled = false;
+            btn.innerText = 'Entrar';
+
+            if (error) {
+                document.getElementById('msg-erro-login').innerText = 'Erro: ' + error.message;
+                document.getElementById('msg-erro-login').style.display = 'block';
+            } else {
+                document.getElementById('form-login').reset();
+                document.getElementById('view-login').style.display = 'none';
+                document.getElementById('view-admin').style.display = 'block';
+                carregarAgendamentos();
+            }
+        });
+
+        async function fazerLogout() {
+            await supabase.auth.signOut();
+            document.getElementById('view-admin').style.display = 'none';
+            document.getElementById('view-login').style.display = 'block';
+        }
+
+        async function carregarAgendamentos() {
+            const listaDiv = document.getElementById('lista-agendamentos');
+            listaDiv.innerHTML = '<p style="color: #aaa;">Buscando agendamentos...</p>';
+
+            const { data, error } = await supabase
+                .from('agendamentos')
+                .select('*')
+                .order('data', { ascending: true })
+                .order('hora', { ascending: true });
+
+            if (error) {
+                listaDiv.innerHTML = `<p style="color: #ff4c4c;">Erro ao carregar: ${error.message}</p>`;
+                return;
+            }
+
+            listaDiv.innerHTML = '';
+
+            if (data.length === 0) {
+                listaDiv.innerHTML = '<p style="color: #aaa;">Sua agenda está livre por enquanto.</p>';
+                return;
+            }
+
+            data.forEach(item => {
+                const dataFormatada = item.data.split('-').reverse().join('/');
+                const div = document.createElement('div');
+                div.className = 'agendamento-item';
+                div.innerHTML = `
+                    <div class="agendamento-info">
+                        <h4>${item.nome}</h4>
+                        <p style="color: var(--gold); margin: 3px 0;">${item.servico}</p>
+                        <p>📅 ${dataFormatada} &nbsp;|&nbsp; ⏰ ${item.hora}</p>
+                    </div>
+                    <button onclick="removerAgendamento('${item.id}')" style="background: #ff4c4c; color: white; border: none; padding: 10px 15px; border-radius: 4px; cursor: pointer; font-weight: bold;">Concluído / Cancelar</button>
+                `;
+                listaDiv.appendChild(div);
+            });
+        }
+
+        async function removerAgendamento(id) {
+            if(!confirm("Deseja remover este agendamento da lista?")) return;
+            
+            const { error } = await supabase
+                .from('agendamentos')
+                .delete()
+                .eq('id', id);
+
+            if (error) {
+                alert('Erro ao remover: ' + error.message);
+            } else {
+                carregarAgendamentos();
+            }
+        }
+
+        verificarSessao();
+    </script>
+</body>
+</html>
+
